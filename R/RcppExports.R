@@ -2,7 +2,7 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 SimulateAF1 <- function(chr_num, num_sub_sim, pop_vec, index_data_file, reference_data_file, reference_pop_desc_file, ref_out_file) {
-    .Call(`_refPanelTools_SimulateAF1`, chr_num, num_sub_sim, pop_vec, index_data_file, reference_data_file, reference_pop_desc_file, ref_out_file)
+    invisible(.Call(`_refPanelTools_SimulateAF1`, chr_num, num_sub_sim, pop_vec, index_data_file, reference_data_file, reference_pop_desc_file, ref_out_file))
 }
 
 indexer <- function(reference_data_file, output_file) {

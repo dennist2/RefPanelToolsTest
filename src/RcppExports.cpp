@@ -11,10 +11,9 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // SimulateAF1
-std::vector<std::float_t> SimulateAF1(int chr_num, std::vector<int> num_sub_sim, std::vector<std::string> pop_vec, std::string index_data_file, std::string reference_data_file, std::string reference_pop_desc_file, std::string ref_out_file);
+void SimulateAF1(int chr_num, std::vector<int> num_sub_sim, std::vector<std::string> pop_vec, std::string index_data_file, std::string reference_data_file, std::string reference_pop_desc_file, std::string ref_out_file);
 RcppExport SEXP _refPanelTools_SimulateAF1(SEXP chr_numSEXP, SEXP num_sub_simSEXP, SEXP pop_vecSEXP, SEXP index_data_fileSEXP, SEXP reference_data_fileSEXP, SEXP reference_pop_desc_fileSEXP, SEXP ref_out_fileSEXP) {
 BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< int >::type chr_num(chr_numSEXP);
     Rcpp::traits::input_parameter< std::vector<int> >::type num_sub_sim(num_sub_simSEXP);
@@ -23,8 +22,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< std::string >::type reference_data_file(reference_data_fileSEXP);
     Rcpp::traits::input_parameter< std::string >::type reference_pop_desc_file(reference_pop_desc_fileSEXP);
     Rcpp::traits::input_parameter< std::string >::type ref_out_file(ref_out_fileSEXP);
-    rcpp_result_gen = Rcpp::wrap(SimulateAF1(chr_num, num_sub_sim, pop_vec, index_data_file, reference_data_file, reference_pop_desc_file, ref_out_file));
-    return rcpp_result_gen;
+    SimulateAF1(chr_num, num_sub_sim, pop_vec, index_data_file, reference_data_file, reference_pop_desc_file, ref_out_file);
+    return R_NilValue;
 END_RCPP
 }
 // indexer
