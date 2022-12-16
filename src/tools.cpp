@@ -10,7 +10,7 @@ using namespace Rcpp;
 int BgzfGetLine(BGZF* fp, std::string& line);
 
 // [[Rcpp::export]]
-std::vector<std::float_t> SimulateAF1(int chr_num,
+void SimulateAF1(int chr_num,
                                       std::vector<int> num_sub_sim,
                                       std::vector<std::string> pop_vec,
                                       std::string index_data_file,
@@ -20,7 +20,8 @@ std::vector<std::float_t> SimulateAF1(int chr_num,
   
   // Read pop_vec and convert pops uppercase
   std::vector<std::string> pop_vec_input;
-  std::vector<std::float_t> af1;
+  std::vector<std::float_t> af;
+  std::float_t af1;
   for(int i=0; i<pop_vec.size(); i++){
     std::string pop = pop_vec[i];
     std::transform(pop.begin(), pop.end(), pop.begin(), ::toupper); //make capital
@@ -133,48 +134,47 @@ std::vector<std::float_t> SimulateAF1(int chr_num,
         
         data_buffer >> geno_str;
         std::vector<int> indices;
+        double allele_counter=0;
         for(int i=0; i<num_sub_sim[k];i++){
           int randNum = rand()%(max-min + 1) + min;
           std::cout<<randNum<<std::endl;
           indices.push_back(randNum);
           
-          double allele_counter=0;
+          
           int is;
           std::string geno;
-          for(int i=0; i<num_sub_sim[k]; i++){
             is = indices[i];
             allele_counter += (double)(geno_str[is]-'0');
             
-          }
+        }
           af1ref = allele_counter/(2*num_subj);
           af1ref = std::ceil(af1ref*100000.0)/100000.0;  //round up to 5 decimal places
           afs.push_back(af1ref);
           // outfile<<std::setprecision(5)<<std::fixed<<af1ref<<std::endl;
+      }
+          af1 = accumulate(afs.begin(), afs.end(), 0.0)/afs.size();
           
-          af1.push_back(accumulate(afs.begin(), afs.end(), 0.0)/afs.size());
           
+            
         }
         
         
         
         
         
-      }
+  
       
       
       
       
-      
+     outfile<<rsid << chr << bp << a1 << a2 << af1ref << fpos << af1;
     }
     
     
-  }
   outfile.close();
   bgzf_close(fpi);
   bgzf_close(fpd);
   
-  
-  return af1;  
   // Also need to merge this with the columns of index data, would be done with cbind in R
   // This would be inneficient, but if this does properly output column of af1 we could fread the index in and cbind them in R
 }
