@@ -153,7 +153,7 @@ void SimulateAF1(int chr_num,
       }
           af1 = accumulate(afs.begin(), afs.end(), 0.0)/afs.size();
           
-          outfile << rsid << chr << bp << a1 << a2 << af1ref << fpos << af1;
+          outfile << rsid << chr << bp << a1 << a2 << af1ref << fpos << af1 << std::endl;
           
             
         }
