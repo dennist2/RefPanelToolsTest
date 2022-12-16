@@ -20,7 +20,6 @@ void SimulateAF1(int chr_num,
   
   // Read pop_vec and convert pops uppercase
   std::vector<std::string> pop_vec_input;
-  std::vector<std::float_t> af;
   std::float_t af1;
   for(int i=0; i<pop_vec.size(); i++){
     std::string pop = pop_vec[i];
@@ -114,7 +113,7 @@ void SimulateAF1(int chr_num,
       
       std::istringstream data_buffer(data_line);
       std::vector<std::string> geno_vec;
-      int num_subj;
+      int num_subj=0;
       std::vector<std::float_t> afs;
       for(int k=0; k<num_pops; k++){
         std::string geno_str;
@@ -154,6 +153,7 @@ void SimulateAF1(int chr_num,
       }
           af1 = accumulate(afs.begin(), afs.end(), 0.0)/afs.size();
           
+          outfile << rsid << chr << bp << a1 << a2 << af1ref << fpos << af1;
           
             
         }
@@ -167,7 +167,7 @@ void SimulateAF1(int chr_num,
       
       
       
-     outfile<<rsid << chr << bp << a1 << a2 << af1ref << fpos << af1;
+     
     }
     
     
