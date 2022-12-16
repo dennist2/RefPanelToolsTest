@@ -10,6 +10,177 @@ using namespace Rcpp;
 int BgzfGetLine(BGZF* fp, std::string& line);
 
 // [[Rcpp::export]]
+std::vector<std::float_t> SimulateAF1(int chr_num,
+                                      std::vector<int> num_sub_sim,
+                                      std::vector<std::string> pop_vec,
+                                      std::string index_data_file,
+                                      std::string reference_data_file,
+                                      std::string reference_pop_desc_file,
+                                      std::string ref_out_file){
+  
+  // Read pop_vec and convert pops uppercase
+  std::vector<std::string> pop_vec_input;
+  std::vector<std::float_t> af1;
+  for(int i=0; i<pop_vec.size(); i++){
+    std::string pop = pop_vec[i];
+    std::transform(pop.begin(), pop.end(), pop.begin(), ::toupper); //make capital
+    pop_vec_input.push_back(pop);
+    //std::cout<<pop<<std::endl;
+  }
+  //for(int i=0; i<pop_vec_input.size(); i++) {std::cout<<pop_vec_input[i]<<std::endl;}
+  
+  
+  // Read reference_pop_desc_file 
+  std::string ref_desc_file = reference_pop_desc_file;
+  std::ifstream in_ref_desc(ref_desc_file.c_str());
+  
+  if(!in_ref_desc){
+    Rcpp::Rcout<<std::endl;
+    Rcpp::stop("ERROR: can't open reference population description file '"+ref_desc_file+"'");
+  }
+  std::string line;
+  std::string pop_abb, sup_pop_abb;
+  int pop_num_subj;
+  std::vector<std::string> ref_pop_vec;
+  std::vector<int> ref_pop_size_vec;
+  std::vector<std::string> ref_sup_pop_vec;
+  
+  std::getline(in_ref_desc, line); //read header of input file.  
+  while(std::getline(in_ref_desc, line)){
+    std::istringstream buffer(line);
+    buffer >> pop_abb >> pop_num_subj >> sup_pop_abb;
+    ref_pop_vec.push_back(pop_abb);
+    ref_pop_size_vec.push_back(pop_num_subj);
+    ref_sup_pop_vec.push_back(sup_pop_abb);
+  }//while
+  int num_pops;
+  num_pops=ref_pop_vec.size();
+  in_ref_desc.close();
+  
+  //std::cout<<num_pops<<std::endl;
+  //for(int i=0; i<ref_pop_vec.size(); i++) {std::cout<<ref_pop_vec[i]<<std::endl;}
+  //for(int i=0; i<ref_pop_vec.size(); i++) {std::cout<<ref_pop_size_vec[i]<<std::endl;}
+  //for(int i=0; i<ref_pop_vec.size(); i++) {std::cout<<ref_sup_pop_vec[i]<<std::endl;}
+  
+  // init pop_flag vector
+  std::vector<int> pop_flag_vec;
+  for(int i=0; i<num_pops; i++){
+    std::string pop = ref_pop_vec[i];
+    if(std::find(pop_vec_input.begin(), pop_vec_input.end(), pop)!=pop_vec_input.end()){ //if pop is found in pop_vec_input
+      pop_flag_vec.push_back(1);
+    } else {
+      pop_flag_vec.push_back(0);
+    }
+  }
+  
+  //for(int i=0; i<pop_flag_vec.size(); i++) {std::cout<<pop_flag_vec[i]<<std::endl;}
+  
+  
+  BGZF* fpi = bgzf_open(index_data_file.c_str(), "r");
+  if(!fpi){
+    std::cout<<std::endl;
+    Rcpp::stop("ERROR: can't open index data file '"+index_data_file+"'");
+  }
+  BGZF* fpd = bgzf_open(reference_data_file.c_str(), "r");
+  if(!fpd){
+    std::cout<<std::endl;
+    Rcpp::stop("ERROR: can't open reference data file '"+reference_data_file+"'");
+  }
+  
+  std::ofstream outfile;
+  outfile.open(ref_out_file.c_str());
+  
+  int last_char;
+  std::string index_line, data_line;
+  std::string rsid, a1, a2;
+  int chr;
+  double af1ref;
+  long long int bp, fpos;
+  
+  while(true){
+    last_char = BgzfGetLine(fpi, index_line);
+    if(last_char == -1) //EOF
+      break;
+    
+    std::istringstream buffer(index_line);
+    buffer >> rsid >> chr >> bp >> a1 >> a2 >> af1ref >> fpos;
+    
+    if(chr==chr_num){
+      bgzf_seek(fpd, fpos, SEEK_SET);
+      last_char = BgzfGetLine(fpd, data_line);      
+      if(last_char == -1) //EOF
+        break;
+      
+      std::istringstream data_buffer(data_line);
+      std::vector<std::string> geno_vec;
+      int num_subj;
+      std::vector<std::float_t> afs;
+      for(int k=0; k<num_pops; k++){
+        std::string geno_str;
+        
+        if(pop_flag_vec[k])
+          
+          // use just geno_str, don't use " " (for text file)
+          
+          // write genotype string
+          // //write data info
+          // data_out<<std::endl;
+          
+          num_subj += geno_str.length();
+        srand(time(NULL));
+        int min=0;
+        int max=num_subj-1;
+        
+        data_buffer >> geno_str;
+        std::vector<int> indices;
+        for(int i=0; i<num_sub_sim[k];i++){
+          int randNum = rand()%(max-min + 1) + min;
+          std::cout<<randNum<<std::endl;
+          indices.push_back(randNum);
+          
+          double allele_counter=0;
+          int is;
+          std::string geno;
+          for(int i=0; i<num_sub_sim[k]; i++){
+            is = indices[i];
+            allele_counter += (double)(geno_str[is]-'0');
+            
+          }
+          af1ref = allele_counter/(2*num_subj);
+          af1ref = std::ceil(af1ref*100000.0)/100000.0;  //round up to 5 decimal places
+          afs.push_back(af1ref);
+          // outfile<<std::setprecision(5)<<std::fixed<<af1ref<<std::endl;
+          
+          af1.push_back(accumulate(afs.begin(), afs.end(), 0.0)/afs.size());
+          
+        }
+        
+        
+        
+        
+        
+      }
+      
+      
+      
+      
+      
+    }
+    
+    
+  }
+  outfile.close();
+  bgzf_close(fpi);
+  bgzf_close(fpd);
+  
+  
+  return af1;  
+  // Also need to merge this with the columns of index data, would be done with cbind in R
+  // This would be inneficient, but if this does properly output column of af1 we could fread the index in and cbind them in R
+}
+
+
+// [[Rcpp::export]]
 void indexer(std::string reference_data_file,
              std::string output_file){
   
@@ -39,8 +210,8 @@ void indexer(std::string reference_data_file,
 
 // [[Rcpp::export]]
 void cal_af1ref(std::string reference_data_file,
-                 int num_pops,
-                 std::string output_file){
+                int num_pops,
+                std::string output_file){
   BGZF* fp = bgzf_open(reference_data_file.c_str(), "r");
   std::ofstream outfile;
   outfile.open(output_file.c_str());
@@ -59,18 +230,22 @@ void cal_af1ref(std::string reference_data_file,
     if(last_char == -1)
       break;
     std::istringstream buffer(line);
-    double allele_counter=0;
     for(int k=0; k<num_pops; k++){
       std::string geno_str;
       buffer >> geno_str;
       num_subj += geno_str.length();
+      double allele_counter=0;
       for(int i=0; i<geno_str.length(); i++){
         allele_counter += (double)(geno_str[i]-'0');
       }
+      
+      af1ref = allele_counter/(2*num_subj);
+      af1ref = std::ceil(af1ref*100000.0)/100000.0;  //round up to 5 decimal places
+      outfile<<std::setprecision(5)<<std::fixed<<af1ref<<std::endl;
     }
-    af1ref = allele_counter/(2*num_subj);
-    af1ref = std::ceil(af1ref*100000.0)/100000.0;  //round up to 5 decimal places
-    outfile<<std::setprecision(5)<<std::fixed<<af1ref<<std::endl;
+    
+    // Need vector of all allele counts, 
+    
     //std::cout<<std::setprecision(5)<<std::fixed<<af1ref<<std::endl;
     //cc++;
     //if(cc>100)
@@ -128,13 +303,16 @@ void extract_chr_data(int chr_num,
   bgzf_close(fpd);
 }
 
+
+
+
 // [[Rcpp::export]]
 void extract_chr_pop_data(int chr_num,
-                      std::vector<std::string> pop_vec,
-                      std::string index_data_file,
-                      std::string reference_data_file,
-                      std::string reference_pop_desc_file,
-                      std::string ref_out_file){
+                          std::vector<std::string> pop_vec,
+                          std::string index_data_file,
+                          std::string reference_data_file,
+                          std::string reference_pop_desc_file,
+                          std::string ref_out_file){
   
   // Read pop_vec and convert pops uppercase
   std::vector<std::string> pop_vec_input;
@@ -192,7 +370,7 @@ void extract_chr_pop_data(int chr_num,
   
   //for(int i=0; i<pop_flag_vec.size(); i++) {std::cout<<pop_flag_vec[i]<<std::endl;}
   
-
+  
   BGZF* fpi = bgzf_open(index_data_file.c_str(), "r");
   if(!fpi){
     std::cout<<std::endl;
@@ -203,7 +381,7 @@ void extract_chr_pop_data(int chr_num,
     std::cout<<std::endl;
     Rcpp::stop("ERROR: can't open reference data file '"+reference_data_file+"'");
   }
-    
+  
   std::ofstream data_out;
   data_out.open(ref_out_file.c_str());
   
@@ -320,8 +498,8 @@ void test_gz_file(std::string gz_file){
 
 // [[Rcpp::export]]
 std::string get_geno_info(int64_t fpos, 
-                   std::string reference_data_file){
-
+                          std::string reference_data_file){
+  
   BGZF* fp = bgzf_open(reference_data_file.c_str(), "r");
   if(!fp){
     std::cout<<std::endl;
@@ -388,4 +566,3 @@ void LoadProgressBar( int percent ){
   }
   std::cout<< "\r" <<percent << "%  " <<"[" << bar << "] " <<std::flush;
 }
-  
